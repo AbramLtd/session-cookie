@@ -1,34 +1,48 @@
 const Cookies = require('cookies');
-const onHeaders = require('on-headers');
 
-function cookieSession({ keys, name = 'session' }, {
+const Session = require('./src/session');
+
+function cookieSession({
+  keys,
+  name = 'session',
+  redis = undefined,
   signed = true,
-
+  maxAge = 30 * 24 * 60 * 60 * 1000,
 }) {
+  if (!redis) {
+    throw new Error('');
+  }
+  const session = new Session(redis, maxAge);
+
   return (req, res, next) => {
     const cookies = new Cookies(req, res, {
       keys,
     });
 
-    let session;
 
     function getSession() {
-      if (session) {
-        return session;
-      }
       try {
-        session = JSON.parse(cookies.get(name, {
+        const id = cookies.get(name, {
           signed,
-        }));
-        return session;
+        });
+        if (!id) {
+          return undefined;
+        }
+        return session.get(id);
       } catch (e) {
         return undefined;
       }
     }
 
     function setSession(value) {
-      session = value;
-      return value;
+      if (!value.id || !value.data) {
+        throw new Error('');
+      }
+      cookies.set(name, value.id, {
+        signed,
+        maxAge,
+      });
+      return session.set(value.id, value.data);
     }
 
     Object.defineProperty(req, 'session', {
@@ -37,15 +51,6 @@ function cookieSession({ keys, name = 'session' }, {
       get: getSession,
       set: setSession,
     });
-
-    onHeaders(res, () => {
-      if (session) {
-        cookies.set(name, Buffer.from(session), {
-          signed,
-        });
-      }
-    });
-
 
     next();
   };

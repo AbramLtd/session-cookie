@@ -26,6 +26,8 @@
   "dependencies": {
     "cookies": "^0.7.1",
     "nanoid": "^1.1.0",
-    "on-headers": "^1.0.1"
+    "on-headers": "^1.0.1",
+    "redis": "^2.8.0",
+    "redis-rejson": "^1.0.0"
   }
 }
